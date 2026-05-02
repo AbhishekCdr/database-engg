@@ -28,6 +28,7 @@
 20. [How the Planner Chooses a Scan](#20-how-the-planner-chooses-a-scan)
 21. [Reading EXPLAIN — Field Reference](#21-reading-explain--field-reference)
 22. [Quick-Reference Summary Table](#22-quick-reference-summary-table)
+23. [Video Notes — Bitmap Index Scan in Postgres](#23-video-notes--bitmap-index-scan-in-postgres)
 
 ---
 
@@ -547,6 +548,85 @@ EXPLAIN (ANALYZE, BUFFERS, VERBOSE, SETTINGS, WAL) <query>;
 | Custom Scan | Extension | Extension-defined | Extension | Citus, TimescaleDB, pg_strom |
 | Parallel * | Same as base, in workers | Possibly unordered | Parallel I/O | Large analytical scans |
 | Append / Merge Append | Multiple children | Concatenated / merge-sorted | Per child | Partitioned tables, inheritance |
+
+---
+
+## 23. Video Notes — Bitmap Index Scan in Postgres
+
+> Distilled notes from a walkthrough video on how Postgres picks between Sequential, Index, and Bitmap Index Scans, with a focus on **why the Bitmap Index Scan exists** as a middle-ground strategy.
+
+### Key Concepts
+
+#### Sequential Scan (Full Table Scan)
+- Reads **every row** in the table from disk into memory.
+- Efficient when the query needs to touch a **large portion** of the table — there is no point doing index lookups if you'll read most pages anyway.
+- Avoids random I/O entirely; everything is sequential reads, which the OS/storage handles efficiently.
+
+#### Index Scan
+- Uses an index (e.g., a B-tree on the primary key) to **locate exactly the rows that match**.
+- Best for **small, targeted queries** where the predicate is highly selective.
+- **Downside:** each matched index entry triggers a **random heap fetch** to read the actual row. When many rows match, the cost of all those random page reads quickly outweighs the cost of just scanning the table sequentially.
+
+#### Bitmap Index Scan (Postgres' middle-ground strategy)
+- A two-phase plan unique in spirit to Postgres:
+  1. **Phase 1 — Build the bitmap.** Walk the index and, instead of fetching rows immediately, mark the **heap pages** (and within them, the tuples) that contain matches. The result is an in-memory bitmap of "interesting" pages.
+  2. **Phase 2 — Read the heap in physical order.** Visit each marked page **once, in block-number order**, and re-check the conditions on the tuples there.
+- Random I/O is converted into mostly **sequential I/O** because the heap is read in page order rather than in index order.
+- **Combines multiple indexes.** For a query like `WHERE grade > 95 AND id < 10000`, Postgres can:
+  - Build a bitmap from the `grade` index,
+  - Build a bitmap from the `id` index,
+  - **AND** them together (`BitmapAnd`),
+  - Then read only the heap pages that survive the intersection.
+- Conditions are **rechecked** after fetching, both because (a) the bitmap may be lossy and (b) the indexes may have approximated the predicate.
+
+### Strategy Insights — How Postgres Chooses
+
+| Number of matching rows | Scan Postgres tends to pick | Reason |
+|---|---|---|
+| **Very few** (highly selective) | **Index Scan** | A handful of random heap fetches is cheap; index ordering may also help `LIMIT`/`ORDER BY`. |
+| **Many** (low selectivity) | **Sequential Scan** | If you're reading most of the table anyway, skip the index overhead and stream the heap. |
+| **Moderate** (in between) | **Bitmap Index Scan** | Index narrows down the page set, then heap is read in physical order — best of both worlds. |
+
+### Performance Trade-offs at a Glance
+
+- **Sequential Scan** — no random I/O, but reads everything (wasted work on selective predicates).
+- **Index Scan** — precise, but each row triggers a random page read; degrades quickly as match-count grows.
+- **Bitmap Scan** — precise *and* batches page access; pays the cost of building the bitmap up front, then amortizes by reading heap pages once and in order.
+
+### Practical Use Cases for Bitmap Scans
+
+- Queries with **multiple WHERE conditions** that each have an index — Postgres can `BitmapAnd` / `BitmapOr` them.
+- **GIN-indexed** queries (full-text search, JSONB containment, trigram search) — the GIN AM almost always feeds a bitmap scan.
+- Analytics-style filters that match thousands to millions of rows out of a much larger table — too many for an Index Scan, too few for a Seq Scan.
+
+### Decision Flow — Postgres' Internal Reasoning
+
+```
+                ┌──────────────────────────────┐
+                │ Predicate on a relation      │
+                └──────────────┬───────────────┘
+                               │
+              estimate selectivity from pg_statistic
+                               │
+        ┌──────────────────────┼──────────────────────┐
+        │                      │                      │
+   very selective         moderate                low selectivity
+   (few rows)             (many but not all)      (most of table)
+        │                      │                      │
+        ▼                      ▼                      ▼
+   ┌──────────┐         ┌──────────────┐         ┌──────────┐
+   │  Index   │         │   Bitmap     │         │   Seq    │
+   │  Scan    │         │   Index +    │         │   Scan   │
+   │          │         │   Heap Scan  │         │          │
+   └──────────┘         └──────────────┘         └──────────┘
+   random heap          build bitmap →           stream heap
+   fetches per row      heap read in             pages in order
+                        block order
+```
+
+### Takeaway
+
+> Bitmap Index Scans are Postgres' clever optimization: they **batch work to reduce random access**. Use them when a query returns a moderate number of rows or combines multiple indexable conditions — Postgres will merge the bitmaps, walk the heap once in physical order, and recheck the predicate on the way through.
 
 ---
 
