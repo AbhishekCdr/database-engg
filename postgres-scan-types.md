@@ -163,7 +163,7 @@ A two-phase strategy:
 ### When the planner picks it
 - Selectivity in the "medium" zone — too many rows for an Index Scan's random I/O, too few for a Seq Scan.
 - Multiple indexable predicates that can be `AND`/`OR`-combined.
-- GIN indexes (full-text search, JSONB containment) almost always feed a bitmap scan.
+- GIN indexes (full-text search, JSONB containment) almost always feed a  bitmap scan.
 
 ### EXPLAIN example
 ```
