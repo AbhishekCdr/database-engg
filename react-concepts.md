@@ -7,30 +7,31 @@
 ## Table of Contents
 
 1. [What Is React & Why It Exists](#1-what-is-react--why-it-exists)
-2. [Components — The Lego Pieces](#2-components--the-lego-pieces)
-3. [JSX — JavaScript in Disguise](#3-jsx--javascript-in-disguise)
-4. [Props — Passing Data Down](#4-props--passing-data-down)
-5. [Composition & the `children` Prop](#5-composition--the-children-prop)
-6. [The `key` Prop & Rendering Lists](#6-the-key-prop--rendering-lists)
-7. [Rendering & the Virtual DOM](#7-rendering--the-virtual-dom)
-8. [Reconciliation & Diffing](#8-reconciliation--diffing)
-9. [State & `useState`](#9-state--usestate)
-10. [Event Handling](#10-event-handling)
-11. [Controlled vs Uncontrolled Components](#11-controlled-vs-uncontrolled-components)
-12. [Hooks — The Rules & The Core Set](#12-hooks--the-rules--the-core-set)
-13. [Purity & Pure Components](#13-purity--pure-components)
-14. [Strict Mode](#14-strict-mode)
-15. [Side Effects & `useEffect`](#15-side-effects--useeffect)
-16. [Refs & `useRef`](#16-refs--useref)
-17. [Context — Avoiding Prop Drilling](#17-context--avoiding-prop-drilling)
-18. [Portals — Rendering Outside the Tree](#18-portals--rendering-outside-the-tree)
-19. [Suspense — Showing Fallbacks While Loading](#19-suspense--showing-fallbacks-while-loading)
-20. [Error Boundaries — Catching Render Errors](#20-error-boundaries--catching-render-errors)
-21. [Other Hooks You'll Meet (`useMemo`, `useCallback`, `useReducer`, `useContext`)](#21-other-hooks-youll-meet)
-22. [Custom Hooks](#22-custom-hooks)
-23. [Performance — Memoization & Re-render Avoidance](#23-performance--memoization--re-render-avoidance)
-24. [Putting It All Together — A Tiny App](#24-putting-it-all-together--a-tiny-app)
-25. [Common Pitfalls & Interview Q&A](#25-common-pitfalls--interview-qa)
+2. [Library vs Framework — Why React Is a Library](#2-library-vs-framework--why-react-is-a-library)
+3. [Components — The Lego Pieces](#3-components--the-lego-pieces)
+4. [JSX — JavaScript in Disguise](#4-jsx--javascript-in-disguise)
+5. [Props — Passing Data Down](#5-props--passing-data-down)
+6. [Composition & the `children` Prop](#6-composition--the-children-prop)
+7. [The `key` Prop & Rendering Lists](#7-the-key-prop--rendering-lists)
+8. [Rendering & the Virtual DOM](#8-rendering--the-virtual-dom)
+9. [Reconciliation & Diffing](#9-reconciliation--diffing)
+10. [State & `useState`](#10-state--usestate)
+11. [Event Handling](#11-event-handling)
+12. [Controlled vs Uncontrolled Components](#12-controlled-vs-uncontrolled-components)
+13. [Hooks — The Rules & The Core Set](#13-hooks--the-rules--the-core-set)
+14. [Purity & Pure Components](#14-purity--pure-components)
+15. [Strict Mode](#15-strict-mode)
+16. [Side Effects & `useEffect`](#16-side-effects--useeffect)
+17. [Refs & `useRef`](#17-refs--useref)
+18. [Context — Avoiding Prop Drilling](#18-context--avoiding-prop-drilling)
+19. [Portals — Rendering Outside the Tree](#19-portals--rendering-outside-the-tree)
+20. [Suspense — Showing Fallbacks While Loading](#20-suspense--showing-fallbacks-while-loading)
+21. [Error Boundaries — Catching Render Errors](#21-error-boundaries--catching-render-errors)
+22. [Other Hooks You'll Meet (`useMemo`, `useCallback`, `useReducer`, `useContext`)](#22-other-hooks-youll-meet)
+23. [Custom Hooks](#23-custom-hooks)
+24. [Performance — Memoization & Re-render Avoidance](#24-performance--memoization--re-render-avoidance)
+25. [Putting It All Together — A Tiny App](#25-putting-it-all-together--a-tiny-app)
+26. [Common Pitfalls & Interview Q&A](#26-common-pitfalls--interview-qa)
 
 ---
 
@@ -63,7 +64,109 @@ You change `count`, the DOM updates. Done.
 
 ---
 
-## 2. Components — The Lego Pieces
+## 2. Library vs Framework — Why React Is a Library
+
+A common interview question: *"Is React a library or a framework?"* The answer is **library**, and understanding the distinction tells you a lot about how React is meant to be used.
+
+### The one-line answer
+
+- **Library** — *you* call *it*. You're in charge.
+- **Framework** — *it* calls *you*. The framework is in charge.
+
+This is the **Inversion of Control (IoC)** principle, often called the **"Hollywood Principle"**: *"Don't call us, we'll call you."*
+
+### Analogy
+
+| | Library | Framework |
+|---|---|---|
+| Building a house | You hire a **plumber** when you need pipes installed. You decide when, where, and how. | You buy a **prefab house kit**. The kit dictates the layout; you fill in the rooms. |
+| Cooking | A **set of ingredients** — you decide the recipe. | A **meal kit** — recipe is set; you just follow steps. |
+| Travel | A **map** — you choose the route. | A **guided tour** — the guide picks the route; you go along. |
+
+### Technical comparison
+
+| Aspect | Library | Framework |
+|---|---|---|
+| **Control flow** | Your code calls the library | The framework calls your code |
+| **Flexibility** | High — use what you need, ignore the rest | Lower — must follow its conventions |
+| **Coupling** | Loose | Tight |
+| **Replaceable** | Easy to swap out | Hard — often a full rewrite |
+| **Learning curve** | Smaller, focused | Larger, opinionated |
+| **Structure** | You design the architecture | Framework imposes the architecture |
+
+### Concrete examples
+
+**Library — React, jQuery, Lodash, Axios**
+
+```jsx
+// You decide where and when to use React
+import { useState } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+}
+```
+
+You wrote the entry point. You chose to call `useState`. React doesn't dictate your folder structure, routing, or data fetching — you pick all that.
+
+**Framework — Angular, Next.js, Django, Spring, Rails**
+
+```ts
+// Angular — the framework calls your component lifecycle hooks
+@Component({ selector: 'app-counter', template: '...' })
+export class CounterComponent implements OnInit {
+  ngOnInit() {                    // Angular calls this — not you
+    console.log('component initialized');
+  }
+}
+```
+
+Angular boots up, scans for components, instantiates them, and calls *your* code at the right moments. You don't decide when `ngOnInit` runs — Angular does.
+
+Same with Next.js:
+
+```js
+// pages/api/users.js — Next.js calls this on every request
+export default function handler(req, res) {
+  res.json({ users: [...] });
+}
+```
+
+You never `import` Next.js and call it. You drop a file in a folder, and Next.js *finds* it and *calls* it.
+
+### Why React is a library, not a framework
+
+React only handles the **view layer**. It deliberately does not give you:
+
+- A **router** — pick React Router, TanStack Router, or build your own.
+- A **state manager** — useState/useReducer, Redux, Zustand, Jotai, MobX… your call.
+- A **data fetching** layer — fetch, Axios, TanStack Query, SWR, Apollo.
+- A **build tool** — Vite, Webpack, Parcel, Next.js, Remix.
+- A **CSS solution** — plain CSS, Tailwind, CSS-in-JS, CSS Modules.
+
+This makes React unopinionated and flexible. The trade-off: more decisions up front, more "JavaScript fatigue".
+
+A framework like **Angular** ships all of those in the box — one router, one HTTP client, one CLI, one way to structure things. Less choice, more guidance.
+
+### The grey area
+
+Modern tools blur the line:
+
+- **React** is technically a library, but with React Router + Redux + Next.js on top, it starts to feel like a framework.
+- **Next.js** (built on React) **is** a framework — it has a CLI (`next dev`), file-system routing, and calls your code based on file location.
+- **Express** is a library/microframework — minimal IoC, but routes are still "called by" Express.
+- **Vue** sits between — more opinionated than React, less than Angular.
+
+> Rule of thumb: if it has a CLI like `next dev` or `ng serve` that runs *your* code, it's a framework. If you just `import` it and call functions, it's a library.
+
+### Interview-ready answer
+
+> "React is officially a **library** for building UIs. It only handles the view layer — you choose your own router, state manager, data fetching, and build tool. A framework like Angular bundles all those decisions for you and calls your code via its own lifecycle. With React, *I* call React; with Angular, Angular calls *me*. That's the Inversion of Control principle, sometimes called the Hollywood Principle: 'don't call us, we'll call you.'"
+
+---
+
+## 3. Components — The Lego Pieces
 
 A **component** is a reusable, self-contained piece of UI — like a Lego brick. You build big UIs by snapping small components together.
 
@@ -106,7 +209,7 @@ function App() {
 
 ---
 
-## 3. JSX — JavaScript in Disguise
+## 4. JSX — JavaScript in Disguise
 
 **JSX** lets you write HTML-like markup inside JavaScript. It looks like HTML but is actually JavaScript:
 
@@ -166,7 +269,7 @@ return (
 
 ---
 
-## 4. Props — Passing Data Down
+## 5. Props — Passing Data Down
 
 **Props** ("properties") are how parent components pass data to children. They look like HTML attributes but can hold any JavaScript value: strings, numbers, objects, functions, even other components.
 
@@ -207,7 +310,7 @@ function Avatar({ size = 64, src }) {
 
 ---
 
-## 5. Composition & the `children` Prop
+## 6. Composition & the `children` Prop
 
 React doesn't have inheritance like classical OOP — it uses **composition**. The special `children` prop holds whatever JSX you nest inside a component.
 
@@ -253,7 +356,7 @@ The same `Modal` can hold anything.
 
 ---
 
-## 6. The `key` Prop & Rendering Lists
+## 7. The `key` Prop & Rendering Lists
 
 When you render a list, React needs a way to identify each item across renders — so it can tell "this item moved" vs "this item is new". That's the `key` prop.
 
@@ -289,7 +392,7 @@ If the list is reordered or items inserted at the top, using `index` as the key 
 
 ---
 
-## 7. Rendering & the Virtual DOM
+## 8. Rendering & the Virtual DOM
 
 When state changes, React re-runs your component function and gets a new "description" of the UI — a tree of JavaScript objects. This is the **Virtual DOM**.
 
@@ -327,7 +430,7 @@ React re-runs your function on every render. But it only touches the real DOM wh
 
 ---
 
-## 8. Reconciliation & Diffing
+## 9. Reconciliation & Diffing
 
 **Reconciliation** is React's process of figuring out what changed and updating the DOM accordingly. The algorithm relies on two assumptions:
 
@@ -357,7 +460,7 @@ Without proper keys, React would naively assume every item changed.
 
 ---
 
-## 9. State & `useState`
+## 10. State & `useState`
 
 **State** is data that changes over time and causes the UI to update. When state changes, React re-renders the component.
 
@@ -430,7 +533,7 @@ Same for arrays — use `[...arr, newItem]`, `arr.filter(...)`, `arr.map(...)`, 
 
 ---
 
-## 10. Event Handling
+## 11. Event Handling
 
 React events look like DOM events but with **camelCase names** and **functions as handlers**, not strings.
 
@@ -480,7 +583,7 @@ React wraps native events in a cross-browser **SyntheticEvent**, so behavior is 
 
 ---
 
-## 11. Controlled vs Uncontrolled Components
+## 12. Controlled vs Uncontrolled Components
 
 For form inputs, you choose who owns the value: React (controlled) or the DOM (uncontrolled).
 
@@ -530,7 +633,7 @@ You read the value only when needed (on submit). Less re-rendering, but harder t
 
 ---
 
-## 12. Hooks — The Rules & The Core Set
+## 13. Hooks — The Rules & The Core Set
 
 **Hooks** are functions that let you "hook into" React features (state, lifecycle, context) from a function component. They were added in React 16.8 (2019) and replaced class components for almost all use cases.
 
@@ -570,7 +673,7 @@ React relies on hook **call order** to associate state with each call. Condition
 
 ---
 
-## 13. Purity & Pure Components
+## 14. Purity & Pure Components
 
 A **pure function** returns the same output for the same input and has no side effects. React components should behave like pure functions during render.
 
@@ -606,7 +709,7 @@ If render has side effects, you get inconsistent UI, lost updates, or duplicate 
 
 ---
 
-## 14. Strict Mode
+## 15. Strict Mode
 
 **Strict Mode** is a development-only tool that helps catch bugs. Wrap your app:
 
@@ -630,7 +733,7 @@ If your code breaks under Strict Mode, it likely has a hidden impurity. Strict M
 
 ---
 
-## 15. Side Effects & `useEffect`
+## 16. Side Effects & `useEffect`
 
 A **side effect** is anything that touches the world outside your component during render — API calls, subscriptions, timers, DOM manipulation, logging.
 
@@ -704,7 +807,7 @@ useEffect(() => {
 
 ---
 
-## 16. Refs & `useRef`
+## 17. Refs & `useRef`
 
 A **ref** is a mutable container whose value persists across renders **without** triggering re-renders when changed.
 
@@ -759,7 +862,7 @@ function Timer() {
 
 ---
 
-## 17. Context — Avoiding Prop Drilling
+## 18. Context — Avoiding Prop Drilling
 
 When data needs to reach deep into the tree, passing it through every intermediate component is painful — that's **prop drilling**.
 
@@ -807,7 +910,7 @@ function UserCard() {
 
 ---
 
-## 18. Portals — Rendering Outside the Tree
+## 19. Portals — Rendering Outside the Tree
 
 A **portal** renders a component into a DOM node that lives **outside** its parent's DOM hierarchy, while keeping it in the React component tree (events bubble normally, context still works).
 
@@ -837,7 +940,7 @@ Add `<div id="modal-root"></div>` next to your app's mount point in `index.html`
 
 ---
 
-## 19. Suspense — Showing Fallbacks While Loading
+## 20. Suspense — Showing Fallbacks While Loading
 
 **Suspense** lets you declaratively show a fallback UI (like a spinner) while something is loading — lazy-loaded components or data.
 
@@ -873,7 +976,7 @@ You declare the loading UI **once** at a boundary instead of writing `if (loadin
 
 ---
 
-## 20. Error Boundaries — Catching Render Errors
+## 21. Error Boundaries — Catching Render Errors
 
 A normal `try/catch` doesn't catch errors thrown during React's render. An **Error Boundary** does — it's a class component (yes, still class) that catches errors in its child tree and shows a fallback UI.
 
@@ -925,7 +1028,7 @@ Wrap small sections, not just the whole app. That way one widget crashing doesn'
 
 ---
 
-## 21. Other Hooks You'll Meet
+## 22. Other Hooks You'll Meet
 
 ### `useReducer` — when state logic gets complex
 
@@ -989,7 +1092,7 @@ Modern React lets you `use(promise)` or `use(context)` inside components and con
 
 ---
 
-## 22. Custom Hooks
+## 23. Custom Hooks
 
 You can extract reusable stateful logic into your own hook. By convention, names start with `use`.
 
@@ -1028,7 +1131,7 @@ Custom hooks let you share **logic**, not UI. Two components using `useLocalStor
 
 ---
 
-## 23. Performance — Memoization & Re-render Avoidance
+## 24. Performance — Memoization & Re-render Avoidance
 
 React's renders are usually cheap — premature optimization is the bigger danger. But once a tree gets large, three tools help:
 
@@ -1060,7 +1163,7 @@ React DevTools' **Profiler** tab shows which components re-rendered and why. Alw
 
 ---
 
-## 24. Putting It All Together — A Tiny App
+## 25. Putting It All Together — A Tiny App
 
 A todo app that uses most of the concepts:
 
@@ -1197,7 +1300,7 @@ This 100-line app uses: components, JSX, props, state, controlled inputs, list k
 
 ---
 
-## 25. Common Pitfalls & Interview Q&A
+## 26. Common Pitfalls & Interview Q&A
 
 ### Common pitfalls
 
